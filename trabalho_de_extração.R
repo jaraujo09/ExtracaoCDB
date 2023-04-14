@@ -7,8 +7,9 @@ if(!requireNamespace("BiocManager", quietly = TRUE))
 if (!requireNamespace("TCGAbiolinks", quietly = TRUE))
   BiocManager::install("TCGAbiolinks")
 
-BiocManager::install("qplot")
-
+install.packages("installr")
+library(installr)
+updateR()
 # BiocManager::install("maftools")
 
 install.packages("ggplot2")

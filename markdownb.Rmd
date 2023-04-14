@@ -5,15 +5,16 @@ date: "2023-04-13"
 output: html_document
 ---
 # Explicação dos dados: 
-A caracterização molecular do cancro da mama é um dos objectivos da investigação do TCGA-BRCA. A informação foi recolhida como resultado de uma parceria entre o Nation Cancer Institute (NCI) e o National Human Genome Research Institute, e inclui dados clínicos, genómicos e transcriptómicos para mais de 1.000 doentes com cancro da mama (NHGRI). Os dados incluem detalhes clínicos sobre os pacientes, tais como a sua idade, sexo, fase do tumor e história do tratamento, bem como informação sobre as anomalias genómicas e transcriptómicas que ocorrem no cancro da mama.
+A caracterização molecular do cancro da mama é um dos objetivos de investigação do TCGA-BRCA. A informação foi recolhida como resultado de uma parceria entre o Nation Cancer Institute (NCI) e o National Human Genome Research Institute(NHGRI), e inclui dados clínicos, genómicos e transcriptómicos para mais de 1.000 doentes com cancro da mama. Os dados incluem detalhes clínicos sobre os pacientes, tais como a sua idade, sexo, fase do tumor e história do tratamento, bem como informação sobre as anomalias genómicas e transcriptómicas que ocorrem no cancro da mama.
+
 #Origem:
-O projecto TCGA-BRCA foi lançado como uma componente do esforço maior do TCGA, que procurou oferecer um inventário extensivo de alterações genéticas em vários tipos de cancro. Muitos métodos genómicos e transcriptómicos, incluindo sequenciação de todo o genoma, sequenciação de todo o exoma, sequenciação de RNA, e perfil de metilação de ADN, foram utilizados no projecto TCGA-BRCA para analisar amostras de cancro da mama em larga escala.
+O projecto TCGA-BRCA foi lançado como uma componente do projeto TCGA, que procura oferecer uma base de dados com as alterações genéticas em vários tipos de cancro. Muitos métodos genómicos e transcriptómicos, incluindo sequenciação de todo o genoma, sequenciação de todo o exoma, sequenciação de RNA, e perfil de metilação de DNA, foram utilizados no projeto TCGA-BRCA para analisar amostras de cancro da mama em larga escala.
 
 #Relevância:
+Devido ao facto de dar uma visão completa das modificações genómicas e transcriptómicas que ocorrem no cancro da mama, os dados do TCGA-BRCA são uma fonte importante para os investigadores que analisam esta doença. A informação pode ser utilizada para descobrir anomalias genéticas e epigenéticas únicas que apoiam o aparecimento e a propagação do cancro da mama, bem como para encontrar alvos terapêuticos prospectivos. O conjunto de dados TCGA-BRCA contém dados clínicos que podem ser utilizados para examinar a ligação entre alterações genéticas e resultados do paciente, bem como para encontrar biomarcadores que possam ser utilizados para prever o prognóstico de um paciente e a resposta ao tratamento. Os dados de TCGA-BRCA como um todo têm o potencial para melhorar drasticamente a nossa compreensão do cancro da mama e para orientar a criação de tratamentos mais eficientes para esta condição.
 
-Devido uo facto de dar uma visão completa das modificações genómicas e transcriptómicas que ocorrem no cancro da mama, os dados do TCGA-BRCA são uma fonte importante para os investigadores que analisam esta doença. A informação pode ser utilizada para descobrir anomalias genéticas e epigenéticas únicas que apoiam o aparecimento e a propagação do cancro da mama, bem como para encontrar alvos terapêuticos prospectivos. O conjunto de dados TCGA-BRCA contém dados clínicos que podem ser utilizados para examinar a ligação entre alterações genéticas e resultados do paciente, bem como para encontrar biomarcadores que possam ser utilizados para prever o prognóstico de um paciente e a resposta ao tratamento. Os dados de TCGA-BRCA como um todo têm o potencial para melhorar drasticamente a nossa compreensão do cancro da mama e para orientar a criação de tratamentos mais eficientes para esta condição.
-
-#Preparação e preprocessamento
+# Preparação e preprocessamento
+##  Dados e metadados
 ```{r}
 proj <- "TCGA-BRCA"
 query <- GDCquery(
@@ -28,12 +29,112 @@ data_rna_brca  <- GDCprepare(query)
 class(data_rna_brca)
 dim(data_rna_brca)
 ```
+## Dados Clínicos
+```{r}
+query_clin <- GDCquery(project = "TCGA-BRCA", 
+                       data.category = "Clinical",
+                       data.type = "Clinical Supplement", 
+                       data.format = "BCR Biotab")
+GDCdownload(query_clin)
+clinical.brca <- GDCprepare(query_clin)
+names(clinical.brca)
+```
+
+```{r}
+data_rna_brca_assay = assay(data_rna_brca, "unstranded" )
+data_rna_brca_assay
+plot(data_rna_brca_assay)
+
+```
+
+# Estrutura dos Dados
+```{r}
+meta_brca = colData(data_rna_brca)
+
+dim(meta_brca)
+colnames(meta_brca)
+
+race = as.factor(meta_brca$race)
+age_diagonosis = meta_brca$age_at_index
+gender = as.factor(meta_brca$gender)
+tissue_type = as.factor(meta_brca$definition)
+vital_status = as.factor(meta_brca$vital_status)
+brca_subtype = as.factor(meta_brca$paper_BRCA_Subtype_PAM50)
+brca_state = as.factor(meta_brca$paper_pathologic_stage)
+```
+
+Selecionamos as colunas correspondentes aos metadados que consideramos mais interessantes:
+
+meta_brca$race --> Indica a raça do paciente (american, indian or alaska native, asian, black or african american, not reported, white).
+
+meta_brca$age_at_index --> Indica a idade com a qual o paciente foi diagnosticado.
+
+meta_brca$gender --> Indica o género dos pacientes (male, female).
+
+meta_brca$definition --> Indica o tipo de tecido da amostra recolhida (Metastatic, Primary solid Tumor, Solid Tissue Normal)
+
+meta_brca$vital_status -->  Indica o estado vital do paciente no momento da recolha de dados. (Alive, Dead)
+
+meta_brca$paper_BRCA_Subtype_PAM50--> Indica o Subtipo do cancro da mama que o paciente apresenta. (Basal, Her2, LumA, LumB, Normal)
+
+meta_brca$paper_pathologic_stage --> Indica o estágio em que se encontra o cancro do paciente no momento da recolha de dados.(NA, Stage_I, Stage_II, Stage_III, Stage_IV)
+
+### Análise Exploratória das Variáveis --> race 
+
+```{r}
+race = na.omit(race)
+qplot(race)
+pie(table(race) ,col = topo.colors(5))
+```
+
+### Análise Exploratória das Variáveis  --> age_diagonosis 
+
+```{r}
+age_diagonosis = na.omit(age_diagonosis)
+barplot(table(age_diag), col = c("darkgrey") ,las=2,cex.names = 0.8)
+```
+
+### Análise Exploratória das Variáveis  --> gender 
+
+```{r}
+gender = na.omit(gender)
+qplot(gender)
+pie(table(gender), col = c("pink","blue"))
+```
+
+
+### Análise Exploratória das Variáveis  --> tissue_type 
+```{r}
+qplot(tissue_type)
+```
+
+### Análise Exploratória das Variáveis  --> vital_status 
+
+```{r}
+vital_status = na.omit(vital_status)
+qplot(vital_status)
+pie(table(vital_status), col = topo.colors(2))
+```
+
+### Análise Exploratória das Variáveis --> brca_subtype
+
+```{r}
+brca_subtype = na.omit(brca_subtype)
+qplot(brca_subtype)
+```
+### Análise Exploratória das Variáveis --> brca_state
+
+```{r}
+brca_state = na.omit(brca_state)
+brca_state = brca_state[brca_state != "NA"]
+qplot(brca_state)
+```
 
 ```{r}
 qplot(data_rna_brca$definition) 
 ```
 ```{r}
-str(data_rna_brca)
+
 ```
 
 

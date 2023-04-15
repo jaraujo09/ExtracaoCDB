@@ -1,0 +1,294 @@
+---
+---
+title: "Trabalho de ECBD"
+author: "Joana Araújo, Mariana Silva, Tiago Silva"
+date: "2023-04-13"
+output: html_document
+---
+# Explicação dos dados: 
+A caracterização molecular do cancro da mama é um dos objetivos de investigação do TCGA-BRCA. A informação foi recolhida como resultado de uma parceria entre o Nation Cancer Institute (NCI) e o National Human Genome Research Institute(NHGRI), e inclui dados clínicos, genómicos e transcriptómicos para mais de 1.000 doentes com cancro da mama. Os dados incluem detalhes clínicos sobre os pacientes, tais como a sua idade, sexo, fase do tumor e história do tratamento, bem como informação sobre as anomalias genómicas e transcriptómicas que ocorrem no cancro da mama.
+
+#Origem:
+O projecto TCGA-BRCA foi lançado como uma componente do projeto TCGA, que procura oferecer uma base de dados com as alterações genéticas em vários tipos de cancro. Muitos métodos genómicos e transcriptómicos, incluindo sequenciação de todo o genoma, sequenciação de todo o exoma, sequenciação de RNA, e perfil de metilação de DNA, foram utilizados no projeto TCGA-BRCA para analisar amostras de cancro da mama em larga escala.
+
+#Relevância:
+Devido ao facto de dar uma visão completa das modificações genómicas e transcriptómicas que ocorrem no cancro da mama, os dados do TCGA-BRCA são uma fonte importante para os investigadores que analisam esta doença. A informação pode ser utilizada para descobrir anomalias genéticas e epigenéticas únicas que apoiam o aparecimento e a propagação do cancro da mama, bem como para encontrar alvos terapêuticos prospectivos. O conjunto de dados TCGA-BRCA contém dados clínicos que podem ser utilizados para examinar a ligação entre alterações genéticas e resultados do paciente, bem como para encontrar biomarcadores que possam ser utilizados para prever o prognóstico de um paciente e a resposta ao tratamento. Os dados de TCGA-BRCA como um todo têm o potencial para melhorar drasticamente a nossa compreensão do cancro da mama e para orientar a criação de tratamentos mais eficientes para esta condição.
+
+# Preparação e preprocessamento
+##  Dados e metadados
+```{r}
+proj <- "TCGA-BRCA"
+query <- GDCquery(
+  project = proj,
+  data.category = "Transcriptome Profiling", 
+  data.type = "Gene Expression Quantification",
+  workflow.type = "STAR - Counts"
+)
+GDCdownload(query)
+data_rna_brca  <- GDCprepare(query)
+
+class(data_rna_brca)
+dim(data_rna_brca)
+```
+## Dados Clínicos
+```{r}
+query_clin <- GDCquery(project = "TCGA-BRCA", 
+                       data.category = "Clinical",
+                       data.type = "Clinical Supplement", 
+                       data.format = "BCR Biotab")
+GDCdownload(query_clin)
+clinical.brca <- GDCprepare(query_clin)
+names(clinical.brca)
+```
+
+```{r}
+data_rna_brca_assay = assay(data_rna_brca, "unstranded" )
+data_rna_brca_assay
+plot(data_rna_brca_assay)
+
+```
+
+# Estrutura dos Dados
+```{r}
+meta_brca = colData(data_rna_brca)
+
+dim(meta_brca)
+colnames(meta_brca)
+
+race = as.factor(meta_brca$race)
+age_diagonosis = meta_brca$age_at_index
+gender = as.factor(meta_brca$gender)
+tissue_type = as.factor(meta_brca$definition)
+vital_status = as.factor(meta_brca$vital_status)
+brca_subtype = as.factor(meta_brca$paper_BRCA_Subtype_PAM50)
+brca_state = as.factor(meta_brca$paper_pathologic_stage)
+```
+
+Selecionamos as colunas correspondentes aos metadados que consideramos mais interessantes:
+
+meta_brca$race --> Indica a raça do paciente (american, indian or alaska native, asian, black or african american, not reported, white).
+
+meta_brca$age_at_index --> Indica a idade com a qual o paciente foi diagnosticado.
+
+meta_brca$gender --> Indica o género dos pacientes (male, female).
+
+meta_brca$definition --> Indica o tipo de tecido da amostra recolhida (Metastatic, Primary solid Tumor, Solid Tissue Normal)
+
+meta_brca$vital_status -->  Indica o estado vital do paciente no momento da recolha de dados. (Alive, Dead)
+
+meta_brca$paper_BRCA_Subtype_PAM50--> Indica o Subtipo do cancro da mama que o paciente apresenta. (Basal, Her2, LumA, LumB, Normal)
+
+meta_brca$paper_pathologic_stage --> Indica o estágio em que se encontra o cancro do paciente no momento da recolha de dados.(NA, Stage_I, Stage_II, Stage_III, Stage_IV)
+
+### Análise Exploratória das Variáveis --> race 
+
+```{r}
+race = na.omit(race)
+qplot(race)
+pie(table(race) ,col = topo.colors(5))
+```
+
+### Análise Exploratória das Variáveis  --> age_diagonosis 
+
+```{r}
+age_diagonosis = na.omit(age_diagonosis)
+barplot(table(age_diag), col = c("darkgrey") ,las=2,cex.names = 0.8)
+```
+
+### Análise Exploratória das Variáveis  --> gender 
+
+```{r}
+gender = na.omit(gender)
+qplot(gender)
+pie(table(gender), col = c("pink","blue"))
+```
+
+
+### Análise Exploratória das Variáveis  --> tissue_type 
+```{r}
+qplot(tissue_type)
+pie(table(tissue_type), col = topo.colors(3)
+```
+
+### Análise Exploratória das Variáveis  --> vital_status 
+
+```{r}
+vital_status = na.omit(vital_status)
+qplot(vital_status)
+pie(table(vital_status), col = topo.colors(2))
+```
+
+### Análise Exploratória das Variáveis --> brca_subtype
+
+```{r}
+brca_subtype = na.omit(brca_subtype)
+qplot(brca_subtype)
+```
+### Análise Exploratória das Variáveis --> brca_state
+
+```{r}
+brca_state = na.omit(brca_state)
+brca_state = brca_state[brca_state != "NA"]
+qplot(brca_state)
+```
+
+```{r}
+qplot(data_rna_brca$definition) 
+```
+```{r}
+
+```
+
+
+```{r}
+colnames(data_rna_brca)
+```
+
+
+```{r}
+assayNames(data_rna_brca)
+```
+
+
+```{r}
+head(data_rna_brca)
+```
+
+
+#DESeq
+```{r}
+data_de <- data_rna_brca[,!is.na(data_rna_brca$definition)]
+qplot(data_rna_brca$definition)+ggtitle("Tissue type plot")
+
+ddsSE <- DESeqDataSet(data_de, design = ~ definition)
+
+keep <- rowSums(counts(ddsSE)) >= 10
+ddsSE <- ddsSE[keep,]
+ddsSE =DESeq(ddsSE)
+
+resultsNames(ddsSE)
+
+res1 <- results(ddsSE, name = "definition_Primary.solid.Tumor_vs_Metastatic")
+res1
+res2<- results(ddsSE, name = "definition_Solid.Tissue.Normal_vs_Metastatic")
+
+dea1 <- as.data.frame(res1)
+dea2 <- as.data.frame(res2)
+
+plot(dea1)
+plot(dea2)
+```
+
+
+#exploração dos resultados- res1
+```{r}
+res1Ordered =res1[order(res1$padj),]
+summary(res1)
+```
+```{r}
+sum(res1$padj < 0.1, na.rm=TRUE)
+```
+
+
+Número total de genes com reads diferentes de 0: 56.713
+
+Número de genes que apresentam um log2 fold change (LFC) maior que 0: 897 genes, o que representa 1,6% do total de genes analisados. Isso indica que esses genes estão sobrexpressos no grupo experimental do que no grupo controle.
+
+Número de genes que apresentam um log2 fold change menor que 0: 626 genes, o que representa 1,1% do total de genes analisados. Isso indica que esses genes estão subexpressos no grupo experimental do que no grupo controle.
+
+Percentagem de outliers: 0%
+
+Percentagem de genes com baixo valor de reads: 39%, ou seja, genes que têm uma contagem média inferior a 1, isso indica que esses genes são subexpressos e, portanto, menos confiáveis.
+
+```{r}
+sum(res2$padj < 0.1, na.rm=TRUE)
+```
+
+1523 genes diferencialmente expressos dos quais 897 são sobrexpressos e 626 são subexpressos
+
+#exploração dos resultados res2
+```{r}
+res2Ordered =res2[order(res2$padj),]
+summary(res2)
+```
+Número total de genes com contagem de leitura diferente de zero: 56.713
+
+Número de genes que apresentam um log2 fold change (LFC) maior que 0: 4.150 genes, o que representa 7,3% do total de genes analisados. Isso indica que esses genes estão sobrexpressos no grupo experimental do que no grupo controle.
+
+Número de genes que apresentam um log2 fold change menor que 0: 5.400 genes, o que representa 9,5% do total de genes analisados. Isso indica que esses genes estão subexpressos no grupo experimental do que no grupo controle.
+
+Percentagem de outliers: 0%
+
+Percentagem de genes com contagens baixas: 37%, ou seja, genes que têm uma contagem média inferior a 1. Isso pode indicar que esses genes são pouco expressos e, portanto, menos confiáveis.
+
+```{r}
+sum(res2$padj < 0.1, na.rm=TRUE)
+```
+
+9550 genes diferencialmente expressos dos quais 4150 são sobrexpressos e 5400 são subexpressos
+
+```{r}
+vst = varianceStabilizingTransformation(ddsSE,blind = FALSE)
+head(assay(vst),3)
+```
+```{r}
+head(counts(ddsSE),3)
+```
+```{r}
+select = rownames(head(res1Ordered,20))
+vst.counts = assay(vst)[select,]
+df = as.data.frame(colData(ddsSE)[,c("definition")])
+pheatmap(vst.counts,cluster_rows = FALSE)
+```
+
+```{r}
+select = rownames(head(res2Ordered,20))
+vst.counts = assay(vst)[select,]
+df = as.data.frame(colData(ddsSE)[,c("definition")])
+pheatmap(vst.counts,cluster_rows = FALSE)
+```
+
+##Expressão diferencial-género
+```{r}
+data_rna_brca$gender
+ggplot2::qplot(data_rna_brca$gender)
+
+data_de = data_rna_brca[,!is.na(data_rna_brca$gender)]
+ddsSE = DESeqDataSet(data_de, design = ~ gender)
+keep = rowSums(counts(ddsSE)) >= 10
+ddsSE = ddsSE[keep,]
+ddsSE = DESeq(ddsSE)
+resultsNames(ddsSE)
+res = results(ddsSE, name = "Gender_male_vs_female")
+dea = as.data.frame(res
+summary(res)
+DESeq2::plotMA(res, ylim = c(-7,7))
+topgene = rownames(res)[which.min(res$padj)]
+plotCounts(ddsSE, gene = topgene, intgroup = c("paper_Gender"))
+```
+
+# DE - Estatistica descritiva Subtype_BRCA
+```{r}
+data_rna_brca$paper_BRCA_Subtype_PAM50
+a = as.factor(data_rna_brca$paper_BRCA_Subtype_PAM50)
+qplot(data_rna_brca$paper_BRCA_Subtype_PAM50)
+
+data_de = data_rna_brca[,!is.na(data_rna_brca$paper_BRCA_Subtype_PAM50)]
+ddsSE = DESeqDataSet(data_de, design = ~ paper_BRCA_Subtype_PAM50)
+keep = rowSums(counts(ddsSE)) >= 10
+ddsSE = ddsSE[keep,]
+ddsSE = DESeq(ddsSE)
+resultsNames(ddsSE)
+
+#Nota:falta verificar as variaveis
+```
+
+## dados clinicos
+```{r}
+names(clinical.brca)
+head (clinical.brca$clinical_ )
+df = as.data.frame(clinical.brca$clinical_drug_gbm)
+View(df)
+
+```
+

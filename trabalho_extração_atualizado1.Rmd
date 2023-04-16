@@ -30,6 +30,7 @@ data_rna_brca  <- GDCprepare(query)
 class(data_rna_brca)
 dim(data_rna_brca)
 ```
+
 ## Dados Clínicos
 ```{r}
 query_clin <- GDCquery(project = "TCGA-BRCA", 
@@ -81,7 +82,6 @@ meta_brca$paper_BRCA_Subtype_PAM50--> Indica o Subtipo do cancro da mama que o p
 meta_brca$paper_pathologic_stage --> Indica o estágio em que se encontra o cancro do paciente no momento da recolha de dados.(NA, Stage_I, Stage_II, Stage_III, Stage_IV)
 
 ### Análise Exploratória das Variáveis --> race 
-
 ```{r}
 race = na.omit(race)
 qplot(race)
@@ -89,29 +89,25 @@ pie(table(race) ,col = topo.colors(5))
 ```
 
 ### Análise Exploratória das Variáveis  --> age_diagonosis 
-
 ```{r}
 age_diagonosis = na.omit(age_diagonosis)
 barplot(table(age_diag), col = c("darkgrey") ,las=2,cex.names = 0.8)
 ```
 
 ### Análise Exploratória das Variáveis  --> gender 
-
 ```{r}
 gender = na.omit(gender)
 qplot(gender)
 pie(table(gender), col = c("pink","blue"))
 ```
 
-
 ### Análise Exploratória das Variáveis  --> tissue_type 
 ```{r}
 qplot(tissue_type)
-pie(table(tissue_type), col = topo.colors(3)
+pie(table(tissue_type), col = topo.colors(3))
 ```
 
 ### Análise Exploratória das Variáveis  --> vital_status 
-
 ```{r}
 vital_status = na.omit(vital_status)
 qplot(vital_status)
@@ -119,13 +115,12 @@ pie(table(vital_status), col = topo.colors(2))
 ```
 
 ### Análise Exploratória das Variáveis --> brca_subtype
-
 ```{r}
 brca_subtype = na.omit(brca_subtype)
 qplot(brca_subtype)
 ```
-### Análise Exploratória das Variáveis --> brca_state
 
+### Análise Exploratória das Variáveis --> brca_state
 ```{r}
 brca_state = na.omit(brca_state)
 brca_state = brca_state[brca_state != "NA"]
@@ -179,8 +174,7 @@ plot(dea1)
 plot(dea2)
 ```
 
-
-#exploração dos resultados- res1
+#Exploração dos resultados- res1
 ```{r}
 res1Ordered =res1[order(res1$padj),]
 summary(res1)
@@ -188,7 +182,6 @@ summary(res1)
 ```{r}
 sum(res1$padj < 0.1, na.rm=TRUE)
 ```
-
 
 Número total de genes com reads diferentes de 0: 56.713
 
@@ -206,11 +199,12 @@ sum(res2$padj < 0.1, na.rm=TRUE)
 
 1523 genes diferencialmente expressos dos quais 897 são sobrexpressos e 626 são subexpressos
 
-#exploração dos resultados res2
+#Exploração dos resultados res2
 ```{r}
 res2Ordered =res2[order(res2$padj),]
 summary(res2)
 ```
+
 Número total de genes com contagem de leitura diferente de zero: 56.713
 
 Número de genes que apresentam um log2 fold change (LFC) maior que 0: 4.150 genes, o que representa 7,3% do total de genes analisados. Isso indica que esses genes estão sobrexpressos no grupo experimental do que no grupo controle.
@@ -251,21 +245,37 @@ pheatmap(vst.counts,cluster_rows = FALSE)
 ##Expressão diferencial-género
 ```{r}
 data_rna_brca$gender
-ggplot2::qplot(data_rna_brca$gender)
+qplot(data_rna_brca$gender)
 
 data_de = data_rna_brca[,!is.na(data_rna_brca$gender)]
-ddsSE = DESeqDataSet(data_de, design = ~ gender)
-keep = rowSums(counts(ddsSE)) >= 10
-ddsSE = ddsSE[keep,]
-ddsSE = DESeq(ddsSE)
-resultsNames(ddsSE)
-res = results(ddsSE, name = "Gender_male_vs_female")
-dea = as.data.frame(res
-summary(res)
-DESeq2::plotMA(res, ylim = c(-7,7))
-topgene = rownames(res)[which.min(res$padj)]
-plotCounts(ddsSE, gene = topgene, intgroup = c("paper_Gender"))
+ddsSEg = DESeqDataSet(data_de, design = ~ gender)
+keep = rowSums(counts(ddsSEg)) >= 10
+ddsSEg = ddsSEg[keep,]
+ddsSEg = DESeq(ddsSEg)
+resultsNames(ddsSEg)
+res_g = results(ddsSEg, name = "Gender_male_vs_female")
+dea = as.data.frame(res_g)
+summary(res_g)
+DESeq2::plotMA(res_g, ylim = c(-7,7))
+topgene = rownames(res_g)[which.min(res_g$padj)]
+plotCounts(ddsSEg, gene = topgene, intgroup = c("paper_Gender"))
 ```
+
+```{r}
+res_gOrdered =res_g[order(res_g$padj),]
+```
+
+```{r}
+vsd <- varianceStabilizingTransformation(ddsSEg, blind = FALSE)
+head(assay(vsd), 3)
+head(counts(dds), 3)
+
+select = rownames(head(res_gOrdered,20))
+vst.counts = assay(vst)[select,]
+df = as.data.frame(colData(ddsSEg)[,c("definition")])
+pheatmap(vst.counts,cluster_rows = FALSE)
+```
+
 
 # DE - Estatistica descritiva Subtype_BRCA
 ```{r}
@@ -274,21 +284,31 @@ a = as.factor(data_rna_brca$paper_BRCA_Subtype_PAM50)
 qplot(data_rna_brca$paper_BRCA_Subtype_PAM50)
 
 data_de = data_rna_brca[,!is.na(data_rna_brca$paper_BRCA_Subtype_PAM50)]
-ddsSE = DESeqDataSet(data_de, design = ~ paper_BRCA_Subtype_PAM50)
-keep = rowSums(counts(ddsSE)) >= 10
-ddsSE = ddsSE[keep,]
-ddsSE = DESeq(ddsSE)
-resultsNames(ddsSE)
+ddsSE_sub = DESeqDataSet(data_de, design = ~ paper_BRCA_Subtype_PAM50)
+keep = rowSums(counts(ddsSE_sub)) >= 10
+ddsSE_sub = ddsSE_sub[keep,]
+ddsSE_sub= DESeq(ddsSE_sub)
+resultsNames(ddsSE_sub)
 
+res_sub = results(ddsSE_sub, name = "")
+dea = as.data.frame(res_sub)
+summary(res_sub)
+DESeq2::plotMA(res_sub, ylim = c(-7,7))
+topgene = rownames(res_sub)[which.min(res_sub$padj)]
+plotCounts(ddsSE_sub, gene = topgene, intgroup = c("paper_BRCA_Subtype_PAM50"))
 #Nota:falta verificar as variaveis
 ```
 
-## dados clinicos
 ```{r}
-names(clinical.brca)
-head (clinical.brca$clinical_ )
-df = as.data.frame(clinical.brca$clinical_drug_gbm)
-View(df)
-
+res_subOrdered =res_sub[order(res_sub$padj),]
 ```
 
+```{r}
+vsd <- varianceStabilizingTransformation(ddsSE_sub, blind = FALSE)
+head(assay(vsd), 3)
+head(counts(dds), 3)
+
+select = rownames(head(res_subOrdered,20))
+vst.counts = assay(vst)[select,]
+df = as.data.frame(colData(ddsSE_sub)[,c("definition")])
+pheatmap(vst.counts,cluster_rows = FALSE)
